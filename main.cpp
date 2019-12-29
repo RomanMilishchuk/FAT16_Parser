@@ -158,7 +158,7 @@ int read_mbr(MBR *mbr, const std::string &src) {
             (i.partition_type == FAT_ID || i.partition_type == FAT_ID_LARGE || i.partition_type == HIDDEN_FAT)) {
             offset = mbr_offset + i.LBA;
             boot_sector_info boot;
-            read_boot_sector(&boot, src.substr(offset, src.size() - offset));
+            read_boot_sector(&boot, src.substr(offset, src.size() - offset), 0);
             print_bs(&boot);
         }
     }
