@@ -124,15 +124,15 @@ typedef struct {
         uint8_t status;
         uint8_t head_first;
         uint8_t sector_first;
-        uint8_t  cylinder_first;
-        uint8_t  partition_type;
-        uint8_t  head_last;
-        uint8_t  sector_last;
-        uint8_t  cylinder_last;
+        uint8_t cylinder_first;
+        uint8_t partition_type;
+        uint8_t head_last;
+        uint8_t sector_last;
+        uint8_t cylinder_last;
         uint32_t LBA;
         uint32_t num_of_sectors;
     } partition[4];
-    uint32_t  mbr_signature;
+    uint32_t mbr_signature;
 } MBR;
 
 int main() {
@@ -144,9 +144,18 @@ int main() {
     print_bs(&bs_info);
     dir_entry_info root_dir_info{};
     printf("\n");
-    read_dir_info(&root_dir_info, data,
-                  (bs_info.reserved_size + bs_info.fats_n * bs_info.fat_size) * bs_info.bytes_per_sector);
-    print_directory_info(&root_dir_info);
+    auto file_num = 0, i = 0;
+    while (i < bs_info.max_files_n) {
+        read_dir_info(&root_dir_info, data,
+                      (bs_info.reserved_size + bs_info.fats_n * bs_info.fat_size) * bs_info.bytes_per_sector + 32 * i);
+        if (root_dir_info.filename[0] != 0x00 && static_cast<unsigned char>(root_dir_info.filename[0]) != 0xe5) {
+            print_directory_info(&root_dir_info);
+            printf("\n");
+            file_num++;
+        }
+        i++;
+    }
+    printf("Total number of files: %d\n", file_num);
 //    std::ifstream is{"../hd0_with_mbr.img"};
 //    std::stringstream buffer;
 //    buffer << is.rdbuf();
