@@ -10,6 +10,8 @@
 #include <fstream>
 #include <sstream>
 
+#pragma pack(1)
+
 
 struct boot_sector_info {
     uint16_t bytes_per_sector;
@@ -22,14 +24,10 @@ struct boot_sector_info {
 };
 
 
-int read_boot_sector(boot_sector_info *bs, const std::string &data) {
-    memcpy(&bs->bytes_per_sector, data.c_str() + 11, 2);
-    memcpy(&bs->sectors_per_cluster, data.c_str() + 13, 1);
-    memcpy(&bs->reserved_size, data.c_str() + 14, 2);
-    memcpy(&bs->fats_n, data.c_str() + 16, 1);
-    memcpy(&bs->max_files_n, data.c_str() + 17, 2);
-    memcpy(&bs->fat_size, data.c_str() + 22, 2);
-    memcpy(&bs->signature, data.c_str() + 510, 2);
+int read_boot_sector(boot_sector_info *bs, const std::string &data, off_t offset) {
+    memcpy(&bs->bytes_per_sector, data.c_str() + offset + 11, 8);
+    memcpy(&bs->fat_size, data.c_str() + offset + 22, 2);
+    memcpy(&bs->signature, data.c_str() + offset + 510, 2);
     return 1;
 }
 
@@ -83,8 +81,9 @@ int main() {
     std::ifstream infile{"../hd0_just_FAT16_without_MBR.img", std::ios::binary};
     std::string data((std::istreambuf_iterator<char>(infile)),
                      std::istreambuf_iterator<char>());
-    boot_sector_info info;
-    read_boot_sector(&info, data);
+    boot_sector_info info{};
+    off_t offset = 0;
+    read_boot_sector(&info, data, offset);
     print_bs(&info);
 //    std::ifstream is{"../hd0_with_mbr.img"};
 //    std::stringstream buffer;
