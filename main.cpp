@@ -10,8 +10,14 @@
 #include <fstream>
 #include <sstream>
 
+#pragma pack(1)
 
-struct boot_sector_info {
+#define FAT_ID 4
+#define FAT_ID_LARGE 6
+#define HIDDEN_FAT 144
+#define ACTIVE_PARTITION 128
+
+typedef struct {
     uint16_t bytes_per_sector;
     uint8_t sectors_per_cluster;
     uint16_t reserved_size;
@@ -19,7 +25,7 @@ struct boot_sector_info {
     uint16_t max_files_n;
     uint16_t fat_size;
     uint16_t signature;
-};
+} boot_sector_info;
 
 
 int read_boot_sector(boot_sector_info *bs, const std::string &data) {
@@ -68,24 +74,38 @@ typedef struct {
         uint8_t status;
         uint8_t head_first;
         uint8_t sector_first;
-        uint8_t  cylinder_first;
-        uint8_t  partition_type;
-        uint8_t  head_last;
-        uint8_t  sector_last;
-        uint8_t  cylinder_last;
+        uint8_t cylinder_first;
+        uint8_t partition_type;
+        uint8_t head_last;
+        uint8_t sector_last;
+        uint8_t cylinder_last;
         uint32_t LBA;
         uint32_t num_of_sectors;
     } partition[4];
-    uint32_t  mbr_signature;
+    uint32_t mbr_signature;
 } MBR;
 
+int read_mbr(MBR *mbr, const std::string &src) {
+    memcpy(mbr, src.c_str(), 512);
+    size_t mbr_offset = 512;
+    size_t offset;
+    for (const auto &i : mbr->partition) {
+        if (i.status == ACTIVE_PARTITION &&
+            (i.partition_type == FAT_ID || i.partition_type == FAT_ID_LARGE || i.partition_type == HIDDEN_FAT)) {
+            offset = mbr_offset + i.LBA;
+            boot_sector_info boot;
+            read_boot_sector(&boot, src.substr(offset, src.size() - offset));
+            print_bs(&boot);
+        }
+    }
+}
+
 int main() {
-    std::ifstream is{"../hd0_with_mbr.img"};
+    std::ifstream is{"../demodisk.img"};
     std::stringstream buffer;
     buffer << is.rdbuf();
     auto FAT = buffer.str();
     MBR MBRPartition;
-    memcpy(&MBRPartition, FAT.c_str(), 512);
-    std::cout<<MBRPartition.partition[0].head_first<<std::endl;
+    read_mbr(&MBRPartition, FAT);
     return 0;
 }
