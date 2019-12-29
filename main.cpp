@@ -2,6 +2,8 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <sstream>
+#include <iostream>
 
 #pragma pack(1)
 
@@ -149,17 +151,34 @@ void print_directory_info(dir_entry_info *entry) {
            (entry->first_cluster_addr_high << 16) | (entry->first_cluster_addr_low));
 }
 
-int read_mbr(MBR *mbr, const std::string &src) {
+void all_dirs_info(boot_sector_info *boot, const std::string &data) {
+    dir_entry_info root_dir_info{};
+    printf("\n");
+    auto file_num = 0, i = 0;
+    while (i < boot->max_files_n) {
+        read_dir_info(&root_dir_info, data,
+                      (boot->reserved_size + boot->fats_n * boot->fat_size) * boot->bytes_per_sector + 32 * i);
+        if (root_dir_info.filename[0] != 0x00 && static_cast<unsigned char>(root_dir_info.filename[0]) != 0xe5) {
+            print_directory_info(&root_dir_info);
+            printf("\n");
+            file_num++;
+        }
+        i++;
+    }
+    printf("Total number of files: %d\n", file_num);
+}
+
+void read_mbr(MBR *mbr, const std::string &src) {
     memcpy(mbr, src.c_str(), 512);
-    size_t mbr_offset = 512;
     size_t offset;
     for (const auto &i : mbr->partition) {
         if (i.status == ACTIVE_PARTITION &&
             (i.partition_type == FAT_ID || i.partition_type == FAT_ID_LARGE || i.partition_type == HIDDEN_FAT)) {
-            offset = mbr_offset + i.LBA;
+            offset = 512 * i.LBA;
             boot_sector_info boot;
             read_boot_sector(&boot, src.substr(offset, src.size() - offset), 0);
             print_bs(&boot);
+            all_dirs_info(&boot, src.substr(offset, src.size() - offset));
         }
     }
 }
@@ -171,26 +190,15 @@ int main() {
     boot_sector_info bs_info{};
     read_boot_sector(&bs_info, data, 0);
     print_bs(&bs_info);
-    dir_entry_info root_dir_info{};
-    printf("\n");
-    auto file_num = 0, i = 0;
-    while (i < bs_info.max_files_n) {
-        read_dir_info(&root_dir_info, data,
-                      (bs_info.reserved_size + bs_info.fats_n * bs_info.fat_size) * bs_info.bytes_per_sector + 32 * i);
-        if (root_dir_info.filename[0] != 0x00 && static_cast<unsigned char>(root_dir_info.filename[0]) != 0xe5) {
-            print_directory_info(&root_dir_info);
-            printf("\n");
-            file_num++;
-        }
-        i++;
-    }
-    printf("Total number of files: %d\n", file_num);
-//    std::ifstream is{"../hd0_with_mbr.img"};
-//    std::stringstream buffer;
-//    buffer << is.rdbuf();
-//    auto FAT = buffer.str();
-//    MBR MBRPartition;
-//    memcpy(&MBRPartition, FAT.c_str(), 512);
-//    std::cout << MBRPartition.mbr_signature << std::endl;
+    all_dirs_info(&bs_info, data);
+
+    std::cout << std::endl << "---------------------------------------------------------------------------------------"
+                              "---------------------------------------------" << std::endl << "With MBR" << std::endl;
+    std::ifstream is{"../hd0_with_mbr.img"};
+    std::stringstream buffer;
+    buffer << is.rdbuf();
+    auto FAT = buffer.str();
+    MBR MBRPartition;
+    read_mbr(&MBRPartition, FAT);
     return 0;
 }
