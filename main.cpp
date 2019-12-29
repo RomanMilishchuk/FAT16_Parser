@@ -1,19 +1,12 @@
-#include <iostream>
-#include <fcntl.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <stdio.h>
-#include <zconf.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <fstream>
-#include <sstream>
 
 #pragma pack(1)
 
 
-struct boot_sector_info {
+typedef struct {
     uint16_t bytes_per_sector;
     uint8_t sectors_per_cluster;
     uint16_t reserved_size;
@@ -21,7 +14,7 @@ struct boot_sector_info {
     uint16_t max_files_n;
     uint16_t fat_size;
     uint16_t signature;
-};
+} boot_sector_info;
 
 typedef struct {
     char filename[11];
@@ -37,6 +30,23 @@ typedef struct {
     uint16_t first_cluster_addr_low;
     uint32_t file_size;
 } dir_entry_info;
+
+typedef struct {
+    uint8_t bootsrap_code[446];
+    struct mbr_partition {
+        uint8_t status;
+        uint8_t head_first;
+        uint8_t sector_first;
+        uint8_t cylinder_first;
+        uint8_t partition_type;
+        uint8_t head_last;
+        uint8_t sector_last;
+        uint8_t cylinder_last;
+        uint32_t LBA;
+        uint32_t num_of_sectors;
+    } partition[4];
+    uint32_t mbr_signature;
+} MBR;
 
 void read_boot_sector(boot_sector_info *bs, const std::string &data, off_t offset) {
     memcpy(&bs->bytes_per_sector, data.c_str() + offset + 11, 8);
@@ -134,23 +144,6 @@ void print_directory_info(dir_entry_info *entry) {
     printf("Number of first sector: %d\n",
            (entry->first_cluster_addr_high << 16) | (entry->first_cluster_addr_low));
 }
-
-typedef struct {
-    uint8_t bootsrap_code[446];
-    struct mbr_partition {
-        uint8_t status;
-        uint8_t head_first;
-        uint8_t sector_first;
-        uint8_t cylinder_first;
-        uint8_t partition_type;
-        uint8_t head_last;
-        uint8_t sector_last;
-        uint8_t cylinder_last;
-        uint32_t LBA;
-        uint32_t num_of_sectors;
-    } partition[4];
-    uint32_t mbr_signature;
-} MBR;
 
 int main() {
     std::ifstream infile{"../hd0_just_FAT16_without_MBR.img", std::ios::binary};
