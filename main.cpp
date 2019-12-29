@@ -22,10 +22,7 @@ struct boot_sector_info {
 };
 
 
-int read_boot_sector(boot_sector_info* bs, const std::string& file_name){
-    std::ifstream infile{file_name, std::ios::binary};
-    std::string data((std::istreambuf_iterator<char>(infile)),
-                     std::istreambuf_iterator<char>());
+int read_boot_sector(boot_sector_info *bs, const std::string &data) {
     memcpy(&bs->bytes_per_sector, data.c_str() + 11, 2);
     memcpy(&bs->sectors_per_cluster, data.c_str() + 13, 1);
     memcpy(&bs->reserved_size, data.c_str() + 14, 2);
@@ -36,7 +33,7 @@ int read_boot_sector(boot_sector_info* bs, const std::string& file_name){
     return 1;
 }
 
-void print_bs(boot_sector_info* bs){
+void print_bs(boot_sector_info *bs) {
     printf("Bytes per sector %d\n", bs->bytes_per_sector);
     printf("Sectors per cluster %d\n", bs->sectors_per_cluster);
     printf("Reserved area size %d\n", bs->reserved_size);
@@ -62,7 +59,7 @@ typedef struct {
 } dir_entry;
 
 void print_directory_info(dir_entry *entry) {
-    
+
 }
 
 typedef struct {
