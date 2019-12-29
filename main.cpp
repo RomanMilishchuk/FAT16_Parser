@@ -119,20 +119,20 @@ void print_directory_info(dir_entry_info *entry) {
 }
 
 typedef struct {
-    char bootsrap_code[446];
+    uint8_t bootsrap_code[446];
     struct mbr_partition {
-        char status;
-        char head_first;
-        char sector_first;
-        char cylinder_first;
-        char partition_type;
-        char head_last;
-        char sector_last;
-        char cylinder_last;
+        uint8_t status;
+        uint8_t head_first;
+        uint8_t sector_first;
+        uint8_t  cylinder_first;
+        uint8_t  partition_type;
+        uint8_t  head_last;
+        uint8_t  sector_last;
+        uint8_t  cylinder_last;
         uint32_t LBA;
         uint32_t num_of_sectors;
     } partition[4];
-    int mbr_signature;
+    uint32_t  mbr_signature;
 } MBR;
 
 int main() {
