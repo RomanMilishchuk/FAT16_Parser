@@ -84,6 +84,21 @@ std::string parse_filename(char filename[11]) {
     return name;
 }
 
+std::string parse_date(uint16_t date, uint16_t time) {
+    uint32_t year, month, day;
+    year = 1980 + ((date >> 9) & 0x7f);
+    month = 1 + ((date >> 5) & 0x0f);
+    day = 1 + (date & 0x1f);
+    uint32_t hours, minutes, seconds;
+    hours = (time >> 11) & 0x1f;
+    minutes = (time >> 5) & 0x3f;
+    seconds = (time & 0x1f) * 2;
+    char data[20];
+    sprintf(data, "%d/%02d/%02d %02d:%02d:%02d", day, month, year, hours, minutes, seconds);
+    data[19] = '\0';
+    return std::string{data};
+}
+
 void print_directory_info(dir_entry_info *entry) {
     if (entry->filename[0] == 0x00) {
         printf("Unallocated\n");
@@ -99,6 +114,8 @@ void print_directory_info(dir_entry_info *entry) {
     } else {
         printf("File is a directory\n");
     }
+    printf("Creation date: %s\n", parse_date(entry->creat_date, entry->creat_time).c_str());
+    printf("Modification date: %s\n", parse_date(entry->modified_date, entry->modified_time).c_str());
     printf("File has next attributes: \n");
     if (entry->attributes & 0x01)
         printf("\tRead-only File\n");
@@ -106,7 +123,7 @@ void print_directory_info(dir_entry_info *entry) {
         printf("\tHidden file\n");
     if (entry->attributes & 0x04)
         printf("\tSystem file\n");
-    if (entry->attributes & 0x008)
+    if (entry->attributes & 0x08)
         printf("\tVolume label\n");
     if (entry->attributes & 0x0f)
         printf("\tLong file name\n");
